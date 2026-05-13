@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cdut-primary: #00693e;
+  --cdut-secondary: #004d30;
+  --cdut-accent: #ff6b35;
+  --cdut-gold: #d4af37;
+  --cdut-dark: #1a1a2e;
+  --cdut-light: #f8f9fa;
+}
+
+body {
+  font-family: 'Microsoft YaHei', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #f5f7fa;
+}
+
+.cdut-primary {
+  color: var(--cdut-primary);
+}
+
+.bg-cdut-primary {
+  background-color: var(--cdut-primary);
+}
+
+.bg-cdut-secondary {
+  background-color: var(--cdut-secondary);
+}
+
+.cdut-accent {
+  color: var(--cdut-accent);
+}
+
+.bg-cdut-accent {
+  background-color: var(--cdut-accent);
+}
+
+.cdut-gold {
+  color: var(--cdut-gold);
+}
+
+.border-cdut-primary {
+  border-color: var(--cdut-primary);
+}
+
+.hover\:bg-cdut-primary:hover {
+  background-color: var(--cdut-primary);
+}
+
+.btn-cdut {
+  @apply px-4 py-2 bg-[#00693e] text-white rounded-lg font-medium hover:bg-[#004d30] transition-all duration-200 shadow-md hover:shadow-lg;
+}
+
+.btn-cdut-outline {
+  @apply px-4 py-2 border-2 border-[#00693e] text-[#00693e] rounded-lg font-medium hover:bg-[#00693e] hover:text-white transition-all duration-200;
+}
+
+.card-cdut {
+  @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200;
+}
+
+.gradient-cdut {
+  @apply bg-gradient-to-r from-[#00693e] to-[#004d30];
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-cdut {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
