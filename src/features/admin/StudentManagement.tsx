@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap, Search, BookOpen, Clock, AlertCircle, User as UserIcon, Eye } from 'lucide-react';
-import { UserService } from '../../services/userService';
-import { BorrowService } from '../../services/borrowService';
+import { UserStorage } from '../../utils/userStorage';
+import { BorrowStorage } from '../../utils/borrowStorage';
 import { User } from '../../types/user';
 import { BorrowRecord } from '../../types/borrow';
 import AdminLayout from '../../layouts/AdminLayout';
@@ -21,8 +21,8 @@ const StudentManagementPage: React.FC = () => {
   }, []);
 
   const loadData = () => {
-    const studentsData = UserService.getAll().filter(u => u.role === 'student');
-    const borrowsData = BorrowService.getAll();
+    const studentsData = UserStorage.getAll().filter(u => u.role === 'student');
+    const borrowsData = BorrowStorage.getAll();
     setStudents(studentsData);
     setBorrowRecords(borrowsData);
   };

@@ -3,8 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Search, BookOpen, Clock, CheckCircle, AlertCircle, UserCheck, LogOut, User as UserIcon } from 'lucide-react';
 import { User } from '../types/user';
 import { BorrowRecord } from '../types/borrow';
-import { BorrowService } from '../services/borrowService';
-import { UserService } from '../services/userService';
+import { BorrowStorage } from '../utils/borrowStorage';
+import { UserStorage } from '../utils/userStorage';
 import { useAuth } from '../context/AuthContext';
 
 export default function StudentManagementPage() {
@@ -26,8 +26,8 @@ export default function StudentManagementPage() {
   }, [checkAuth, navigate]);
 
   const loadData = () => {
-    const studentsData = UserService.getAll().filter(u => u.role === 'student');
-    const borrowsData = BorrowService.getAll();
+    const studentsData = UserStorage.getAll().filter(u => u.role === 'student');
+    const borrowsData = BorrowStorage.getAll();
     setStudents(studentsData);
     setBorrowRecords(borrowsData);
   };

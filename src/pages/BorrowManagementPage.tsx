@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Book } from '../types/book';
 import { BorrowRecord } from '../types/borrow';
-import { BookService } from '../services/bookService';
-import { BorrowService } from '../services/borrowService';
+import { BookStorage } from '../utils/bookStorage';
+import { BorrowStorage } from '../utils/borrowStorage';
 import { Search, Plus, RefreshCw, BookOpen, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import AdminLayout from '../layouts/AdminLayout';
 
@@ -25,8 +25,8 @@ const BorrowManagementPage = () => {
 
   // 加载数据
   const loadData = () => {
-    const booksData = BookService.getAll();
-    const recordsData = BorrowService.getAll();
+    const booksData = BookStorage.getAll();
+    const recordsData = BorrowStorage.getAll();
     setBooks(booksData);
     setBorrowRecords(recordsData);
   };

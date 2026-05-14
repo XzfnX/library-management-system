@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Book, BookOpen, GraduationCap, Clock, BarChart3, Users, AlertCircle, ArrowRight } from 'lucide-react';
-import { BookService } from '../../services/bookService';
-import { BorrowService } from '../../services/borrowService';
-import { UserService } from '../../services/userService';
+import { BookStorage } from '../../utils/bookStorage';
+import { BorrowStorage } from '../../utils/borrowStorage';
+import { UserStorage } from '../../utils/userStorage';
 import AdminLayout from '../../layouts/AdminLayout';
 
 const AdminHomePage: React.FC = () => {
@@ -22,9 +22,9 @@ const AdminHomePage: React.FC = () => {
   }, []);
 
   const loadStats = () => {
-    const books = BookService.getAll();
-    const borrows = BorrowService.getAll();
-    const users = UserService.getAll();
+    const books = BookStorage.getAll();
+    const borrows = BorrowStorage.getAll();
+    const users = UserStorage.getAll();
 
     const now = new Date();
     const overdueCount = borrows.filter(b => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Book, BookFormData } from '../types/book';
-import { BookService } from '../services/bookService';
+import { BookStorage } from '../utils/bookStorage';
 import { Search, Plus, Edit, Trash2, BookOpen, Info, CheckCircle, XCircle } from 'lucide-react';
 import AdminLayout from '../layouts/AdminLayout';
 
@@ -29,9 +29,9 @@ const BookManagementPage = () => {
 
   // 加载图书
   const loadBooks = () => {
-    let result = BookService.getAll();
+    let result = BookStorage.getAll();
     if (searchKeyword) {
-      result = BookService.search(searchKeyword);
+      result = BookStorage.search(searchKeyword);
     }
     setBooks(result);
   };
@@ -59,7 +59,7 @@ const BookManagementPage = () => {
   const handleAddBook = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      BookService.add(formData);
+      BookStorage.add(formData);
       showMessage('添加图书成功！', 'success');
       setShowAddModal(false);
       resetForm();
@@ -75,7 +75,7 @@ const BookManagementPage = () => {
     if (!editingBook) return;
     
     try {
-      BookService.update(editingBook.id, formData);
+      BookStorage.update(editingBook.id, formData);
       showMessage('更新图书成功！', 'success');
       setEditingBook(null);
       resetForm();
@@ -88,7 +88,7 @@ const BookManagementPage = () => {
   // 删除图书
   const handleDeleteBook = (id: string) => {
     try {
-      BookService.delete(id);
+      BookStorage.delete(id);
       showMessage('删除图书成功！', 'success');
       setShowDeleteConfirm(null);
       loadBooks();

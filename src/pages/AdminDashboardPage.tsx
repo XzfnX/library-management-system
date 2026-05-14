@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Book } from '../types/book';
 import { BorrowRecord } from '../types/borrow';
-import { BookService } from '../services/bookService';
-import { BorrowService } from '../services/borrowService';
+import { BookStorage } from '../utils/bookStorage';
+import { BorrowStorage } from '../utils/borrowStorage';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { BookOpen, Users, ShoppingCart, AlertCircle, TrendingUp, LogOut, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -33,8 +33,8 @@ const AdminDashboardPage = () => {
   }, [checkAuth, navigate]);
 
   const loadData = () => {
-    const booksData = BookService.getAll();
-    const borrowsData = BorrowService.getAll();
+    const booksData = BookStorage.getAll();
+    const borrowsData = BorrowStorage.getAll();
     
     setBooks(booksData);
     setBorrowRecords(borrowsData);

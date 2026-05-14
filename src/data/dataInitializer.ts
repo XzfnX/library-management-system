@@ -1,7 +1,7 @@
-import { BookService } from '../services/bookService';
-import { UserService } from '../services/userService';
-import { BorrowService } from '../services/borrowService';
-import { Storage } from '../services/storage';
+import { BookStorage } from '../utils/bookStorage';
+import { UserStorage } from '../utils/userStorage';
+import { BorrowStorage } from '../utils/borrowStorage';
+import { Storage } from '../utils/storage';
 import { generateBooks } from './samples/sampleBooks';
 import { generateStudents } from './samples/sampleStudents';
 import { generateBorrowRecords } from './samples/sampleBorrows';
@@ -25,7 +25,7 @@ export function initializeData() {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }));
-  BookService.setAll(books);
+  books.forEach(book => BookStorage.add(book as any));
 
   const studentsData = generateStudents(15); // 15个学生
   const users: User[] = [
@@ -49,16 +49,16 @@ export function initializeData() {
       updatedAt: new Date().toISOString()
     }))
   ];
-  UserService.setAll(users);
+  users.forEach(user => UserStorage.add(user as any));
 
   const allStudents = users.filter(u => u.role === 'student');
-  const borrowRecordsData = generateBorrowRecords(books, allStudents, 80); // 80条借阅记录
+  const borrowRecordsData = generateBorrowRecords(books, allStudents, 80);
   const borrowRecords: BorrowRecord[] = borrowRecordsData.map(data => ({
     ...data,
     id: Storage.generateId('borrow')
   }));
 
-  BorrowService.setAll(borrowRecords);
+  borrowRecords.forEach(record => BorrowStorage.add(record as any, 'admin_1', '管理员'));
 
   localStorage.setItem(INITIALIZED_KEY, 'true');
 }

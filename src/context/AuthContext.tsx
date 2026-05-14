@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '../types/user';
-import { UserService } from '../services/userService';
+import { UserStorage } from '../utils/userStorage';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -30,18 +30,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const user = UserService.getCurrentUser();
+    const user = UserStorage.getCurrentUser();
     setCurrentUser(user);
     setIsLoading(false);
   }, []);
 
   const studentLogin = async (studentId: string, username: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const result = UserService.studentLogin(studentId, username);
-      if (result.success && result.user) {
-        setCurrentUser(result.user);
+      const student = UserStorage.studentLogin(studentId, username);
+      if (student) {
+        UserStorage.setCurrentUser(student);
+        setCurrentUser(student);
+        return { success: true, message: '登录成功' };
       }
-      return result;
+      return { success: false, message: '学号或姓名错误' };
     } catch (error) {
       return { success: false, message: '登录失败，请重试！' };
     }
@@ -49,18 +51,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const adminLogin = async (account: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const result = UserService.adminLogin(account, password);
-      if (result.success && result.user) {
-        setCurrentUser(result.user);
+      const admin = UserStorage.adminLogin(account, password);
+      if (admin) {
+        UserStorage.setCurrentUser(admin);
+        setCurrentUser(admin);
+        return { success: true, message: '登录成功' };
       }
-      return result;
+      return { success: false, message: '账号或密码错误' };
     } catch (error) {
       return { success: false, message: '登录失败，请重试！' };
     }
   };
 
   const logout = () => {
-    UserService.logout();
+    UserStorage.logout();
     setCurrentUser(null);
   };
 

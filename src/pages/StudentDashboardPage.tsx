@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Book } from '../types/book';
 import { BorrowRecord } from '../types/borrow';
-import { BookService } from '../services/bookService';
-import { BorrowService } from '../services/borrowService';
+import { BookStorage } from '../utils/bookStorage';
+import { BorrowStorage } from '../utils/borrowStorage';
 import { Search, BookOpen, Clock, CheckCircle, AlertCircle, Calendar, LogOut, User, GraduationCap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,9 +27,9 @@ const StudentDashboardPage = () => {
   }, [checkAuth, navigate]);
 
   const loadData = () => {
-    const booksData = BookService.getAll();
+    const booksData = BookStorage.getAll();
     setBooks(booksData);
-    const borrowsData = BorrowService.getAll();
+    const borrowsData = BorrowStorage.getAll();
     setBorrowRecords(borrowsData);
   };
 

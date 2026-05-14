@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Book, BookOpen, Users, TrendingUp, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { BookService } from '../../services/bookService';
-import { BorrowService } from '../../services/borrowService';
+import { BookStorage } from '../../utils/bookStorage';
+import { BorrowStorage } from '../../utils/borrowStorage';
 import AdminLayout from '../../layouts/AdminLayout';
 
 const DataDashboard: React.FC = () => {
@@ -17,8 +17,8 @@ const DataDashboard: React.FC = () => {
   }, []);
 
   const loadData = () => {
-    const booksData = BookService.getAll();
-    const borrowsData = BorrowService.getAll();
+    const booksData = BookStorage.getAll();
+    const borrowsData = BorrowStorage.getAll();
     
     setBooks(booksData);
     setBorrows(borrowsData);
