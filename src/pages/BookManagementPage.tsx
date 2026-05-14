@@ -6,6 +6,7 @@ import AdminLayout from '../layouts/AdminLayout';
 
 const BookManagementPage = () => {
   const [books, setBooks] = useState<Book[]>([]);
+  const [total, setTotal] = useState(0);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
@@ -35,6 +36,7 @@ const BookManagementPage = () => {
         keyword: searchKeyword || undefined
       });
       setBooks(response.records);
+      setTotal(response.total);
     } catch (error) {
       console.error('加载图书失败:', error);
       showMessage('加载图书失败！', 'error');
@@ -163,7 +165,7 @@ const BookManagementPage = () => {
                 <BookOpen className="text-purple-600" />
                 图书管理
               </h1>
-              <p className="text-gray-500 mt-1">共 {books.length} 本图书</p>
+              <p className="text-gray-500 mt-1">共 {total} 本图书</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -194,7 +196,7 @@ const BookManagementPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="text-sm text-gray-500">图书总数</div>
-            <div className="text-2xl font-bold text-gray-900">{books.length}</div>
+            <div className="text-2xl font-bold text-gray-900">{total}</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="text-sm text-gray-500">可借阅</div>
