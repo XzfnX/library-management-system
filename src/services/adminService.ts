@@ -17,5 +17,10 @@ export const adminService = {
   async getAllUsers(): Promise<User[]> {
     const response = await api.get<User[]>('/admin/users');
     return response.data;
+  },
+
+  async getAllBorrows(): Promise<any[]> {
+    const response = await api.get<any[]>('/admin/borrows');
+    return response.data;
   }
 };

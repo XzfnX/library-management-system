@@ -1,34 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { Book } from '../types/book';
-import { BorrowRecord } from '../types/borrow';
-import { BookStorage } from '../utils/bookStorage';
-import { BorrowStorage } from '../utils/borrowStorage';
+import { borrowService, BorrowRecordVO } from '../services/borrowService';
+import { bookService } from '../services/bookService';
 import { Search, Plus, RefreshCw, BookOpen, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import AdminLayout from '../layouts/AdminLayout';
 
 const BorrowManagementPage = () => {
   const [books, setBooks] = useState<Book[]>([]);
-  const [borrowRecords, setBorrowRecords] = useState<BorrowRecord[]>([]);
+  const [borrowRecords, setBorrowRecords] = useState<BorrowRecordVO[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [showBorrowModal, setShowBorrowModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [showReturnConfirm, setShowReturnConfirm] = useState<BorrowRecord | null>(null);
-  const [showRenewConfirm, setShowRenewConfirm] = useState<BorrowRecord | null>(null);
+  const [showReturnConfirm, setShowReturnConfirm] = useState<BorrowRecordVO | null>(null);
+  const [showRenewConfirm, setShowRenewConfirm] = useState<BorrowRecordVO | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [borrowForm, setBorrowForm] = useState({
-    userId: '',
     username: '',
     borrowDays: 30,
     remark: ''
   });
   const [activeTab, setActiveTab] = useState<'active' | 'all'>('active');
 
-  // 加载数据
-  const loadData = () => {
-    const booksData = BookStorage.getAll();
-    const recordsData = BorrowStorage.getAll();
-    setBooks(booksData);
-    setBorrowRecords(recordsData);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [booksData, recordsData] = await Promise.all([
+        bookService.getBooks(1, 1000),
+        borrowService.getAllBorrows()
+      ]);
+      setBooks(booksData.records || []);
+      setBorrowRecords(recordsData || []);
+    } catch (error) {
+      console.error('加载数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -60,77 +67,53 @@ const BorrowManagementPage = () => {
   };
 
   // 借阅图书
-  const handleBorrow = (e: React.FormEvent) => {
+  const handleBorrow = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBook) return;
     
     try {
-      const result = BorrowService.add({
-        bookId: selectedBook.id,
-        userId: borrowForm.userId || 'user_' + Date.now(),
-        username: borrowForm.username,
-        borrowDays: borrowForm.borrowDays,
-        remark: borrowForm.remark
-      }, 'admin', '管理员');
-      
-      if (result) {
-        showMessage('借阅成功！', 'success');
-        setShowBorrowModal(false);
-        setSelectedBook(null);
-        setBorrowForm({ userId: '', username: '', borrowDays: 30, remark: '' });
-        loadData();
-      } else {
-        showMessage('借阅失败，库存不足！', 'error');
-      }
-    } catch (error) {
-      showMessage('借阅失败！', 'error');
+      await borrowService.borrowBook(
+        selectedBook.id, 
+        '0', 
+        borrowForm.username, 
+        borrowForm.borrowDays, 
+        borrowForm.remark
+      );
+      showMessage('借阅成功！', 'success');
+      setShowBorrowModal(false);
+      setSelectedBook(null);
+      setBorrowForm({ username: '', borrowDays: 30, remark: '' });
+      loadData();
+    } catch (error: any) {
+      showMessage(error.message || '借阅失败！', 'error');
     }
   };
 
   // 归还图书
-  const handleReturn = () => {
+  const handleReturn = async () => {
     if (!showReturnConfirm) return;
     
     try {
-      const success = BorrowService.return(showReturnConfirm.id, 'admin', '管理员');
-      if (success) {
-        showMessage('归还成功！', 'success');
-        setShowReturnConfirm(null);
-        loadData();
-      } else {
-        showMessage('归还失败！', 'error');
-      }
-    } catch (error) {
-      showMessage('归还失败！', 'error');
+      await borrowService.returnBook(showReturnConfirm.id);
+      showMessage('归还成功！', 'success');
+      setShowReturnConfirm(null);
+      loadData();
+    } catch (error: any) {
+      showMessage(error.message || '归还失败！', 'error');
     }
   };
 
   // 续借
-  const handleRenew = () => {
+  const handleRenew = async () => {
     if (!showRenewConfirm) return;
     
     try {
-      const result = BorrowService.renew(showRenewConfirm.id, 30);
-      if (result) {
-        showMessage('续借成功！', 'success');
-        setShowRenewConfirm(null);
-        loadData();
-      } else {
-        showMessage('续借失败，已达最大续借次数！', 'error');
-      }
-    } catch (error) {
-      showMessage('续借失败！', 'error');
-    }
-  };
-
-  // 删除记录
-  const handleDelete = (id: string) => {
-    try {
-      BorrowService.delete(id);
-      showMessage('删除成功！', 'success');
+      await borrowService.renewBook(showRenewConfirm.id);
+      showMessage('续借成功！', 'success');
+      setShowRenewConfirm(null);
       loadData();
-    } catch (error) {
-      showMessage('删除失败！', 'error');
+    } catch (error: any) {
+      showMessage(error.message || '续借失败！', 'error');
     }
   };
 
@@ -149,7 +132,7 @@ const BorrowManagementPage = () => {
   };
 
   // 检查是否逾期
-  const isOverdue = (record: BorrowRecord) => {
+  const isOverdue = (record: BorrowRecordVO) => {
     if (record.status === 'returned') return false;
     return new Date(record.dueDate) < new Date();
   };
@@ -331,16 +314,6 @@ const BorrowManagementPage = () => {
                             </button>
                           </>
                         )}
-                        <button
-                          onClick={() => {
-                            if (confirm('确定要删除这条记录吗？')) {
-                              handleDelete(record.id);
-                            }
-                          }}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 size={16} />
-                        </button>
                       </div>
                     </td>
                   </tr>

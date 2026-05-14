@@ -1,89 +1,80 @@
 import React, { useEffect, useState } from 'react';
-import { Book, BookOpen, Users, TrendingUp, AlertCircle } from 'lucide-react';
+import { BookOpen, TrendingUp, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { BookStorage } from '../../utils/bookStorage';
-import { BorrowStorage } from '../../utils/borrowStorage';
+import { adminService } from '../../services/adminService';
+import { StatisticsVO } from '../../services/types';
 import AdminLayout from '../../layouts/AdminLayout';
 
 const DataDashboard: React.FC = () => {
-  const [books, setBooks] = useState<any[]>([]);
-  const [borrows, setBorrows] = useState<any[]>([]);
+  const [statistics, setStatistics] = useState<StatisticsVO | null>(null);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [borrowStatusData, setBorrowStatusData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const booksData = BookStorage.getAll();
-    const borrowsData = BorrowStorage.getAll();
-    
-    setBooks(booksData);
-    setBorrows(borrowsData);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const stats = await adminService.getStatistics();
+      setStatistics(stats);
+      
+      const books = await adminService.getAllBooks();
+      const borrows = await adminService.getAllBorrows();
 
-    // 图书分类统计
-    const categories: Record<string, number> = {};
-    booksData.forEach(book => {
-      const category = book.category || '其他';
-      categories[category] = (categories[category] || 0) + 1;
-    });
-    const categoryDataArray = Object.entries(categories).map(([name, value]) => ({ name, value }));
-    setCategoryData(categoryDataArray);
+      // 图书分类统计
+      const categories: Record<string, number> = {};
+      books.forEach(book => {
+        const category = book.category || '其他';
+        categories[category] = (categories[category] || 0) + 1;
+      });
+      const categoryDataArray = Object.entries(categories).map(([name, value]) => ({ name, value }));
+      setCategoryData(categoryDataArray);
 
-    // 月度借阅统计
-    const monthly: Record<string, number> = {};
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${date.getMonth() + 1}月`;
-      monthly[key] = 0;
-    }
-    
-    borrowsData.forEach(record => {
-      const date = new Date(record.borrowDate);
-      const key = `${date.getMonth() + 1}月`;
-      if (monthly[key] !== undefined) {
-        monthly[key]++;
+      // 月度借阅统计
+      const monthly: Record<string, number> = {};
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${date.getMonth() + 1}月`;
+        monthly[key] = 0;
       }
-    });
-    const monthlyDataArray = Object.entries(monthly).map(([month, count]) => ({ month, count }));
-    setMonthlyData(monthlyDataArray);
-
-    // 借阅状态分布
-    const nowDate = new Date();
-    let active = 0;
-    let returned = 0;
-    let overdue = 0;
-
-    borrowsData.forEach(record => {
-      if (record.status === 'returned') {
-        returned++;
-      } else {
-        if (new Date(record.dueDate) < nowDate) {
-          overdue++;
-        } else {
-          active++;
+      
+      borrows.forEach((record: any) => {
+        const date = new Date(record.borrowDate);
+        const key = `${date.getMonth() + 1}月`;
+        if (monthly[key] !== undefined) {
+          monthly[key]++;
         }
-      }
-    });
+      });
+      const monthlyDataArray = Object.entries(monthly).map(([month, count]) => ({ month, count }));
+      setMonthlyData(monthlyDataArray);
 
-    setBorrowStatusData([
-      { name: '已归还', value: returned, color: '#10b981' },
-      { name: '借出中', value: active, color: '#f59e0b' },
-      { name: '已逾期', value: overdue, color: '#ef4444' }
-    ]);
+    } catch (error) {
+      console.error('加载数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#7C3AED', '#EC4899'];
 
   const stats = {
-    totalBooks: books.length,
-    totalBorrows: borrows.length,
-    totalStock: books.reduce((sum: number, b: any) => sum + (b.totalStock || 0), 0),
-    availableStock: books.reduce((sum: number, b: any) => sum + (b.stock || 0), 0)
+    totalBooks: statistics?.totalBooks || 0,
+    totalBorrows: statistics?.totalBorrows || 0,
+    currentBorrows: statistics?.currentBorrows || 0,
+    overdueBorrows: statistics?.overdueBorrows || 0,
+    totalStock: 0,
+    availableStock: 0
   };
+
+  const borrowStatusData = [
+    { name: '已归还', value: (statistics?.totalBorrows || 0) - (statistics?.currentBorrows || 0) - (statistics?.overdueBorrows || 0), color: '#10b981' },
+    { name: '借出中', value: statistics?.currentBorrows || 0, color: '#f59e0b' },
+    { name: '已逾期', value: statistics?.overdueBorrows || 0, color: '#ef4444' }
+  ];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -101,6 +92,12 @@ const DataDashboard: React.FC = () => {
 
   return (
     <AdminLayout title="数据统计" showBack={true}>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        </div>
+      ) : (
+        <>
       {/* 统计卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -108,10 +105,22 @@ const DataDashboard: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-500">图书总数</p>
               <p className="text-3xl font-bold text-blue-600 mt-2">{stats.totalBooks}</p>
-              <p className="text-xs text-gray-400 mt-1">总库存: {stats.totalStock} 册</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
               <BookOpen className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">当前借阅</p>
+              <p className="text-3xl font-bold text-green-600 mt-2">{stats.currentBorrows}</p>
+              <p className="text-xs text-gray-400 mt-1">逾期: {stats.overdueBorrows} 本</p>
+            </div>
+            <div className="p-3 bg-green-100 rounded-lg">
+              <BookOpen className="w-6 h-6 text-green-600" />
             </div>
           </div>
         </div>
@@ -131,28 +140,11 @@ const DataDashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">可借阅库存</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{stats.availableStock}</p>
+              <p className="text-sm font-medium text-gray-500">已逾期</p>
+              <p className="text-3xl font-bold text-red-600 mt-2">{stats.overdueBorrows}</p>
             </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <Book className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500">库存利用率</p>
-              <p className="text-3xl font-bold text-orange-600 mt-2">
-                {stats.totalStock > 0 
-                  ? `${Math.round(((stats.totalStock - stats.availableStock) / stats.totalStock) * 100)}%`
-                  : '0%'
-                }
-              </p>
-            </div>
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <AlertCircle className="w-6 h-6 text-orange-600" />
+            <div className="p-3 bg-red-100 rounded-lg">
+              <AlertCircle className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
@@ -250,8 +242,8 @@ const DataDashboard: React.FC = () => {
                 data={[
                   { subject: '图书数量', A: stats.totalBooks / 10, fullMark: 30 },
                   { subject: '借阅频次', A: stats.totalBorrows / 50, fullMark: 20 },
-                  { subject: '库存利用率', A: (stats.totalStock - stats.availableStock) / stats.totalStock * 100 || 0, fullMark: 100 },
-                  { subject: '可借率', A: stats.availableStock / stats.totalStock * 100 || 0, fullMark: 100 },
+                  { subject: '当前借阅', A: stats.currentBorrows / 10, fullMark: 20 },
+                  { subject: '逾期控制', A: Math.max(0, 100 - (stats.overdueBorrows / stats.totalBorrows * 100 || 0)), fullMark: 100 },
                   { subject: '分类丰富度', A: categoryData.length * 10, fullMark: 100 }
                 ]}
               >
@@ -282,17 +274,19 @@ const DataDashboard: React.FC = () => {
           <div className="border-l-4 border-orange-500 pl-4">
             <p className="text-sm text-gray-500">最丰富分类</p>
             <p className="text-xl font-bold text-orange-600">
-              {categoryData.length > 0 ? categoryData.reduce((a, b) => a.value > b.value ? a : b).name : '暂无'}
+              {categoryData.length > 0 ? categoryData.reduce((a: any, b: any) => a.value > b.value ? a : b).name : '暂无'}
             </p>
           </div>
           <div className="border-l-4 border-purple-500 pl-4">
             <p className="text-sm text-gray-500">平均单本借阅</p>
             <p className="text-xl font-bold text-purple-600">
-              {books.length > 0 ? (stats.totalBorrows / books.length).toFixed(1) : '0'}
+              {stats.totalBooks > 0 ? (stats.totalBorrows / stats.totalBooks).toFixed(1) : '0'}
             </p>
           </div>
         </div>
       </div>
+        </>
+      )}
     </AdminLayout>
   );
 };

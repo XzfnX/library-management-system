@@ -1,23 +1,34 @@
 import api from './api';
-import { BorrowRecord, BorrowDTO, PageResult } from './types';
+
+export interface BorrowRecordVO {
+  id: number;
+  userId: number;
+  bookId: number;
+  username?: string;
+  bookTitle?: string;
+  bookCover?: string;
+  borrowDate: string;
+  dueDate: string;
+  returnDate?: string;
+  status: string;
+  renewCount: number;
+  maxRenewCount: number;
+}
 
 export const borrowService = {
-  async getMyBorrows(params: {
-    page?: number;
-    size?: number;
-    status?: string;
-  }): Promise<PageResult<BorrowRecord>> {
-    const response = await api.get<any>('/borrows/my', { params });
-    return {
-      total: response.data.total,
-      records: response.data.records,
-      current: response.data.current,
-      size: response.data.size,
-    };
+  async getAllBorrows(): Promise<BorrowRecordVO[]> {
+    const response = await api.get<BorrowRecordVO[]>('/admin/borrows');
+    return response;
   },
 
-  async borrowBook(data: BorrowDTO): Promise<void> {
-    await api.post('/borrows', data);
+  async borrowBook(bookId: number, userId: string, username: string, borrowDays: number, remark?: string): Promise<void> {
+    await api.post('/borrows', {
+      bookId,
+      userId: parseInt(userId),
+      username,
+      borrowDays,
+      remark
+    });
   },
 
   async returnBook(id: number): Promise<void> {
@@ -26,5 +37,5 @@ export const borrowService = {
 
   async renewBook(id: number): Promise<void> {
     await api.put(`/borrows/${id}/renew`);
-  },
+  }
 };
