@@ -36,6 +36,7 @@ export interface BorrowDTO {
 export interface LoginDTO {
   username: string;
   password: string;
+  studentId?: string;
 }
 
 export interface RegisterDTO {

@@ -33,18 +33,30 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String login(LoginDTO loginDTO) {
-        User user = userMapper.selectOne(
-            new LambdaQueryWrapper<User>()
-                .eq(User::getUsername, loginDTO.getUsername())
-                .eq(User::getStatus, 1)
-        );
+        User user = null;
+
+        if (StrUtil.isNotBlank(loginDTO.getStudentId()) && StrUtil.isNotBlank(loginDTO.getUsername())) {
+            user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>()
+                    .eq(User::getPhone, loginDTO.getStudentId())
+                    .eq(User::getUsername, loginDTO.getUsername())
+                    .eq(User::getRole, 1)
+                    .eq(User::getStatus, 1)
+            );
+        } else if (StrUtil.isNotBlank(loginDTO.getUsername()) && StrUtil.isNotBlank(loginDTO.getPassword())) {
+            user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>()
+                    .eq(User::getUsername, loginDTO.getUsername())
+                    .eq(User::getStatus, 1)
+            );
+
+            if (user != null && !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+                throw new BusinessException("密码错误");
+            }
+        }
 
         if (user == null) {
             throw new BusinessException("用户不存在或已被禁用");
-        }
-
-        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
-            throw new BusinessException("密码错误");
         }
 
         return jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());

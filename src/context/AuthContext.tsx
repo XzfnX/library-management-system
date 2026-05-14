@@ -54,29 +54,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const studentLogin = async (studentId: string, username: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const token = await authService.login({ username: studentId, password: username });
+      const token = await authService.login({ username, password: '', studentId });
       const user = await authService.getCurrentUser();
       if (user && user.role === 'student') {
         setCurrentUser(user);
         return { success: true, message: '登录成功' };
       }
       return { success: false, message: '学号或姓名错误' };
-    } catch (error) {
-      return { success: false, message: '登录失败，请重试！' };
+    } catch (error: any) {
+      return { success: false, message: error.message || '登录失败，请重试！' };
     }
   };
 
   const adminLogin = async (account: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const token = await authService.login({ username: account, password: password });
+      const token = await authService.login({ username: account, password });
       const user = await authService.getCurrentUser();
       if (user && user.role === 'admin') {
         setCurrentUser(user);
         return { success: true, message: '登录成功' };
       }
       return { success: false, message: '账号或密码错误' };
-    } catch (error) {
-      return { success: false, message: '登录失败，请重试！' };
+    } catch (error: any) {
+      return { success: false, message: error.message || '登录失败，请重试！' };
     }
   };
 

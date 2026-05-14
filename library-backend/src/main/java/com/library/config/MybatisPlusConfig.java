@@ -163,6 +163,7 @@ public class MybatisPlusConfig implements MetaObjectHandler {
             User testUser = new User();
             testUser.setUsername("testuser");
             testUser.setEmail("test@library.com");
+            testUser.setPhone("2024001");
             testUser.setPassword(passwordEncoder.encode("admin123"));
             testUser.setAvatar(null);
             testUser.setRole(1);
@@ -172,6 +173,7 @@ public class MybatisPlusConfig implements MetaObjectHandler {
             User zhangsan = new User();
             zhangsan.setUsername("zhangsan");
             zhangsan.setEmail("zhangsan@library.com");
+            zhangsan.setPhone("2024002");
             zhangsan.setPassword(passwordEncoder.encode("admin123"));
             zhangsan.setAvatar(null);
             zhangsan.setRole(1);
@@ -181,6 +183,7 @@ public class MybatisPlusConfig implements MetaObjectHandler {
             User lisi = new User();
             lisi.setUsername("lisi");
             lisi.setEmail("lisi@library.com");
+            lisi.setPhone("2024003");
             lisi.setPassword(passwordEncoder.encode("admin123"));
             lisi.setAvatar(null);
             lisi.setRole(1);
@@ -190,6 +193,7 @@ public class MybatisPlusConfig implements MetaObjectHandler {
             User wangwu = new User();
             wangwu.setUsername("wangwu");
             wangwu.setEmail("wangwu@library.com");
+            wangwu.setPhone("2024004");
             wangwu.setPassword(passwordEncoder.encode("admin123"));
             wangwu.setAvatar(null);
             wangwu.setRole(1);
@@ -199,6 +203,7 @@ public class MybatisPlusConfig implements MetaObjectHandler {
             User zhaoliu = new User();
             zhaoliu.setUsername("zhaoliu");
             zhaoliu.setEmail("zhaoliu@library.com");
+            zhaoliu.setPhone("2024005");
             zhaoliu.setPassword(passwordEncoder.encode("admin123"));
             zhaoliu.setAvatar(null);
             zhaoliu.setRole(1);
@@ -208,6 +213,7 @@ public class MybatisPlusConfig implements MetaObjectHandler {
             User sunqi = new User();
             sunqi.setUsername("sunqi");
             sunqi.setEmail("sunqi@library.com");
+            sunqi.setPhone("2024006");
             sunqi.setPassword(passwordEncoder.encode("admin123"));
             sunqi.setAvatar(null);
             sunqi.setRole(1);
@@ -217,6 +223,7 @@ public class MybatisPlusConfig implements MetaObjectHandler {
             User zhouba = new User();
             zhouba.setUsername("zhouba");
             zhouba.setEmail("zhouba@library.com");
+            zhouba.setPhone("2024007");
             zhouba.setPassword(passwordEncoder.encode("admin123"));
             zhouba.setAvatar(null);
             zhouba.setRole(1);

@@ -9,6 +9,16 @@ public class LoginDTO {
     @NotBlank(message = "密码不能为空")
     private String password;
 
+    private String studentId;
+
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public void setStudentId(String studentId) {
+        this.studentId = studentId;
+    }
+
     public String getUsername() {
         return username;
     }
