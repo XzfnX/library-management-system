@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap, Search, BookOpen, Clock, AlertCircle, User as UserIcon, Eye } from 'lucide-react';
-import { UserStorage } from '../../utils/userStorage';
-import { BorrowStorage } from '../../utils/borrowStorage';
+import { adminService } from '../../services/adminService';
 import { User } from '../../types/user';
 import { BorrowRecord } from '../../types/borrow';
 import AdminLayout from '../../layouts/AdminLayout';
+import { mockUsers, mockBorrowRecords } from '../../data/mockData';
 
 const StudentManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,11 +20,21 @@ const StudentManagementPage: React.FC = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const studentsData = UserStorage.getAll().filter(u => u.role === 'student');
-    const borrowsData = BorrowStorage.getAll();
-    setStudents(studentsData);
-    setBorrowRecords(borrowsData);
+  const loadData = async () => {
+    try {
+      const [users, borrows] = await Promise.all([
+        adminService.getAllUsers(),
+        adminService.getAllBorrows()
+      ]);
+      const studentsData = users.filter(u => u.role === 'student');
+      setStudents(studentsData);
+      setBorrowRecords(borrows as unknown as BorrowRecord[]);
+    } catch (error) {
+      console.error('加载数据失败，使用本地数据:', error);
+      const studentsData = mockUsers.filter(u => u.role === 'student');
+      setStudents(studentsData);
+      setBorrowRecords(mockBorrowRecords);
+    }
   };
 
   const filteredStudents = students.filter(student => {

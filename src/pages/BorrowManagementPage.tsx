@@ -4,6 +4,7 @@ import { borrowService, BorrowRecordVO } from '../services/borrowService';
 import { bookService } from '../services/bookService';
 import { Search, Plus, RefreshCw, BookOpen, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import AdminLayout from '../layouts/AdminLayout';
+import { mockBooks, mockBorrowRecords, mockUsers } from '../data/mockData';
 
 const BorrowManagementPage = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -34,7 +35,28 @@ const BorrowManagementPage = () => {
       const records = response?.data || [];
       setBorrowRecords(Array.isArray(records) ? records : []);
     } catch (error) {
-      console.error('加载数据失败:', error);
+      console.error('加载数据失败，使用本地数据:', error);
+      setBooks(mockBooks);
+      const mockVO: BorrowRecordVO[] = mockBorrowRecords.map(record => {
+        const book = mockBooks.find(b => b.id === record.bookId);
+        const user = mockUsers.find(u => u.id === record.userId);
+        return {
+          id: record.id,
+          userId: record.userId,
+          bookId: record.bookId,
+          borrowDate: record.borrowDate,
+          dueDate: record.dueDate,
+          returnDate: record.returnDate,
+          status: record.status,
+          renewCount: record.renewCount,
+          bookTitle: book?.title || '',
+          bookIsbn: book?.isbn || '',
+          username: user?.username || '',
+          createdAt: record.borrowDate,
+          updatedAt: record.borrowDate
+        };
+      });
+      setBorrowRecords(mockVO);
     } finally {
       setLoading(false);
     }

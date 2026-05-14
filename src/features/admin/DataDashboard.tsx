@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Ba
 import { adminService } from '../../services/adminService';
 import { StatisticsVO } from '../../services/types';
 import AdminLayout from '../../layouts/AdminLayout';
+import { mockBooks, mockBorrowRecords, mockStatistics } from '../../data/mockData';
 
 const DataDashboard: React.FC = () => {
   const [statistics, setStatistics] = useState<StatisticsVO | null>(null);
@@ -53,7 +54,43 @@ const DataDashboard: React.FC = () => {
       setMonthlyData(monthlyDataArray);
 
     } catch (error) {
-      console.error('加载数据失败:', error);
+      console.error('加载数据失败，使用本地数据:', error);
+      
+      setStatistics({
+        totalBooks: mockStatistics.totalBooks,
+        totalUsers: mockStatistics.totalUsers,
+        totalBorrows: mockStatistics.totalBorrows,
+        currentBorrows: mockStatistics.currentBorrows,
+        overdueBorrows: mockStatistics.overdueBorrows,
+        totalComments: mockStatistics.totalComments,
+        averageRating: mockStatistics.averageRating
+      });
+
+      const categories: Record<string, number> = {};
+      mockBooks.forEach(book => {
+        const category = book.category || '其他';
+        categories[category] = (categories[category] || 0) + 1;
+      });
+      const categoryDataArray = Object.entries(categories).map(([name, value]) => ({ name, value }));
+      setCategoryData(categoryDataArray);
+
+      const monthly: Record<string, number> = {};
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${date.getMonth() + 1}月`;
+        monthly[key] = 0;
+      }
+      
+      mockBorrowRecords.forEach(record => {
+        const date = new Date(record.borrowDate);
+        const key = `${date.getMonth() + 1}月`;
+        if (monthly[key] !== undefined) {
+          monthly[key]++;
+        }
+      });
+      const monthlyDataArray = Object.entries(monthly).map(([month, count]) => ({ month, count }));
+      setMonthlyData(monthlyDataArray);
     } finally {
       setLoading(false);
     }

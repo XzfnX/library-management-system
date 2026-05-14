@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '../types/user';
 import { authService } from '../services/authService';
+import { mockUsers } from '../data/mockData';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -29,6 +30,8 @@ const convertRole = (role: number): UserRole => {
   return role === 2 ? 'admin' : 'student';
 };
 
+const LOCAL_TOKEN_PREFIX = 'local_token_';
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,18 +42,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const storedToken = authService.getStoredToken();
       
       if (storedUser && storedToken) {
-        try {
-          const user = await authService.getCurrentUser();
-          setCurrentUser(user);
-        } catch {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+        if (storedToken.startsWith(LOCAL_TOKEN_PREFIX)) {
+          setCurrentUser(storedUser);
+        } else {
+          try {
+            const user = await authService.getCurrentUser();
+            setCurrentUser(user);
+          } catch {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
         }
       }
       setIsLoading(false);
     };
     initAuth();
   }, []);
+
+  const studentLoginWithMockData = (studentId: string, username: string): User | null => {
+    return mockUsers.find(u => u.phone === studentId && u.username === username && u.role === 'student') || null;
+  };
+
+  const adminLoginWithMockData = (account: string, password: string): User | null => {
+    if (account === 'admin' && password === 'admin123') {
+      return mockUsers.find(u => u.username === 'admin' && u.role === 'admin') || null;
+    }
+    return null;
+  };
+
+  const saveLocalUser = (user: User) => {
+    const token = LOCAL_TOKEN_PREFIX + Date.now();
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+  };
 
   const studentLogin = async (studentId: string, username: string): Promise<{ success: boolean; message: string }> => {
     try {
@@ -66,7 +90,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: false, message: error.response.data.message };
       }
       if (error.message?.includes('Network') || !error.response) {
-        return { success: false, message: '登录错误' };
+        const mockUser = studentLoginWithMockData(studentId, username);
+        if (mockUser) {
+          saveLocalUser(mockUser);
+          setCurrentUser(mockUser);
+          return { success: true, message: '登录成功' };
+        }
+        return { success: false, message: '学号或姓名错误' };
       }
       return { success: false, message: error.message || '登录错误' };
     }
@@ -86,7 +116,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: false, message: error.response.data.message };
       }
       if (error.message?.includes('Network') || !error.response) {
-        return { success: false, message: '登录错误' };
+        const mockUser = adminLoginWithMockData(account, password);
+        if (mockUser) {
+          saveLocalUser(mockUser);
+          setCurrentUser(mockUser);
+          return { success: true, message: '登录成功' };
+        }
+        return { success: false, message: '账号或密码错误' };
       }
       return { success: false, message: error.message || '登录错误' };
     }

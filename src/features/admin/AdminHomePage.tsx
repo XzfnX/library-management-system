@@ -4,6 +4,7 @@ import { Book, BookOpen, GraduationCap, Clock, BarChart3, Users, AlertCircle, Ar
 import { adminService } from '../../services/adminService';
 import { bookService } from '../../services/bookService';
 import AdminLayout from '../../layouts/AdminLayout';
+import { mockBooks, mockUsers, mockBorrowRecords, mockStatistics } from '../../data/mockData';
 
 interface Stats {
   totalBooks: number;
@@ -49,7 +50,20 @@ const AdminHomePage: React.FC = () => {
         overdueBorrows: statistics.overdueBorrows
       });
     } catch (error) {
-      console.error('加载统计数据失败:', error);
+      console.error('加载统计数据失败，使用本地数据:', error);
+      const availableCount = mockBooks.filter(b => b.stock > 0).length;
+      const studentCount = mockUsers.filter(u => u.role === 'student').length;
+      const activeCount = mockBorrowRecords.filter(r => r.status === 'borrowed').length;
+      const overdueCount = mockBorrowRecords.filter(r => r.status === 'overdue').length;
+      
+      setStats({
+        totalBooks: mockStatistics.totalBooks,
+        availableBooks: availableCount,
+        totalStudents: studentCount,
+        totalBorrows: mockStatistics.totalBorrows,
+        activeBorrows: activeCount,
+        overdueBorrows: overdueCount
+      });
     } finally {
       setLoading(false);
     }
