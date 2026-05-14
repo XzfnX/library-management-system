@@ -16,8 +16,8 @@ export interface BorrowRecordVO {
 }
 
 export const borrowService = {
-  async getAllBorrows(): Promise<BorrowRecordVO[]> {
-    const response = await api.get<BorrowRecordVO[]>('/admin/borrows');
+  async getAllBorrows(): Promise<any> {
+    const response = await api.get<any>('/admin/borrows');
     return response;
   },
 

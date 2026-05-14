@@ -26,11 +26,13 @@ const BorrowManagementPage = () => {
     setLoading(true);
     try {
       const [booksData, recordsData] = await Promise.all([
-        bookService.getBooks(1, 1000),
+        bookService.getBooks({ page: 1, size: 100 }),
         borrowService.getAllBorrows()
       ]);
       setBooks(booksData.records || []);
-      setBorrowRecords(recordsData || []);
+      const response = recordsData as any;
+      const records = response?.data || [];
+      setBorrowRecords(Array.isArray(records) ? records : []);
     } catch (error) {
       console.error('加载数据失败:', error);
     } finally {
