@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '../types/user';
-import { UserStorage } from '../utils/userStorage';
+import { authService } from '../services/authService';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -25,22 +25,39 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const convertRole = (role: number): UserRole => {
+  return role === 2 ? 'admin' : 'student';
+};
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const user = UserStorage.getCurrentUser();
-    setCurrentUser(user);
-    setIsLoading(false);
+    const initAuth = async () => {
+      const storedUser = authService.getStoredUser();
+      const storedToken = authService.getStoredToken();
+      
+      if (storedUser && storedToken) {
+        try {
+          const user = await authService.getCurrentUser();
+          setCurrentUser(user);
+        } catch {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      }
+      setIsLoading(false);
+    };
+    initAuth();
   }, []);
 
   const studentLogin = async (studentId: string, username: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const student = UserStorage.studentLogin(studentId, username);
-      if (student) {
-        UserStorage.setCurrentUser(student);
-        setCurrentUser(student);
+      const token = await authService.login({ username: studentId, password: username });
+      const user = await authService.getCurrentUser();
+      if (user && user.role === 'student') {
+        setCurrentUser(user);
         return { success: true, message: '登录成功' };
       }
       return { success: false, message: '学号或姓名错误' };
@@ -51,10 +68,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const adminLogin = async (account: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const admin = UserStorage.adminLogin(account, password);
-      if (admin) {
-        UserStorage.setCurrentUser(admin);
-        setCurrentUser(admin);
+      const token = await authService.login({ username: account, password: password });
+      const user = await authService.getCurrentUser();
+      if (user && user.role === 'admin') {
+        setCurrentUser(user);
         return { success: true, message: '登录成功' };
       }
       return { success: false, message: '账号或密码错误' };
@@ -64,7 +81,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const logout = () => {
-    UserStorage.logout();
+    authService.logout();
     setCurrentUser(null);
   };
 

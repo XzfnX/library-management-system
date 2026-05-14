@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Book, BookFormData } from '../types/book';
-import { BookStorage } from '../utils/bookStorage';
+import { Book } from '../types/book';
+import { bookService } from '../services/bookService';
 import { Search, Plus, Edit, Trash2, BookOpen, Info, CheckCircle, XCircle } from 'lucide-react';
 import AdminLayout from '../layouts/AdminLayout';
 
@@ -13,7 +13,8 @@ const BookManagementPage = () => {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const [formData, setFormData] = useState<BookFormData>({
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
     title: '',
     author: '',
     isbn: '',
@@ -22,31 +23,35 @@ const BookManagementPage = () => {
     category: '文学',
     description: '',
     stock: 1,
-    totalStock: 1,
-    location: '',
-    price: 0
+    isPublic: 1
   });
 
-  // 加载图书
-  const loadBooks = () => {
-    let result = BookStorage.getAll();
-    if (searchKeyword) {
-      result = BookStorage.search(searchKeyword);
+  const loadBooks = async () => {
+    setIsLoading(true);
+    try {
+      const response = await bookService.getBooks({
+        page: 1,
+        size: 100,
+        keyword: searchKeyword || undefined
+      });
+      setBooks(response.records);
+    } catch (error) {
+      console.error('加载图书失败:', error);
+      showMessage('加载图书失败！', 'error');
+    } finally {
+      setIsLoading(false);
     }
-    setBooks(result);
   };
 
   useEffect(() => {
     loadBooks();
   }, [searchKeyword]);
 
-  // 显示消息
   const showMessage = (text: string, type: 'success' | 'error') => {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 3000);
   };
 
-  // 处理表单输入
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
@@ -55,49 +60,54 @@ const BookManagementPage = () => {
     }));
   };
 
-  // 添加图书
-  const handleAddBook = (e: React.FormEvent) => {
+  const handleAddBook = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
-      BookStorage.add(formData);
+      await bookService.addBook(formData);
       showMessage('添加图书成功！', 'success');
       setShowAddModal(false);
       resetForm();
       loadBooks();
     } catch (error) {
       showMessage('添加图书失败！', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // 编辑图书
-  const handleEditBook = (e: React.FormEvent) => {
+  const handleEditBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingBook) return;
     
+    setIsLoading(true);
     try {
-      BookStorage.update(editingBook.id, formData);
+      await bookService.updateBook(Number(editingBook.id), formData);
       showMessage('更新图书成功！', 'success');
       setEditingBook(null);
       resetForm();
       loadBooks();
     } catch (error) {
       showMessage('更新图书失败！', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // 删除图书
-  const handleDeleteBook = (id: string) => {
+  const handleDeleteBook = async (id: string) => {
+    setIsLoading(true);
     try {
-      BookStorage.delete(id);
+      await bookService.deleteBook(Number(id));
       showMessage('删除图书成功！', 'success');
       setShowDeleteConfirm(null);
       loadBooks();
     } catch (error) {
       showMessage('删除图书失败！', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // 重置表单
   const resetForm = () => {
     setFormData({
       title: '',
@@ -108,13 +118,10 @@ const BookManagementPage = () => {
       category: '文学',
       description: '',
       stock: 1,
-      totalStock: 1,
-      location: '',
-      price: 0
+      isPublic: 1
     });
   };
 
-  // 打开编辑
   const openEdit = (book: Book) => {
     setEditingBook(book);
     setFormData({
@@ -126,29 +133,19 @@ const BookManagementPage = () => {
       category: book.category,
       description: book.description,
       stock: book.stock,
-      totalStock: book.totalStock,
-      location: book.location,
-      price: book.price,
-      status: book.status,
-      borrowCount: book.borrowCount
+      isPublic: book.isPublic
     });
   };
 
-  // 获取状态标签
-  const getStatusLabel = (status: string) => {
-    const labels = {
-      available: { text: '可借阅', class: 'bg-green-100 text-green-800' },
-      borrowed: { text: '已借出', class: 'bg-yellow-100 text-yellow-800' },
-      reserved: { text: '已预约', class: 'bg-blue-100 text-blue-800' },
-      damaged: { text: '已损坏', class: 'bg-red-100 text-red-800' },
-      lost: { text: '已丢失', class: 'bg-gray-100 text-gray-800' }
-    };
-    return labels[status as keyof typeof labels] || { text: status, class: 'bg-gray-100 text-gray-800' };
+  const getStatusLabel = (stock: number) => {
+    if (stock > 0) {
+      return { text: '可借阅', class: 'bg-green-100 text-green-800' };
+    }
+    return { text: '已借出', class: 'bg-yellow-100 text-yellow-800' };
   };
 
   return (
     <AdminLayout title="图书管理" showBack={true}>
-      {/* 消息提示 */}
       {message && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${
           message.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
@@ -159,7 +156,6 @@ const BookManagementPage = () => {
       )}
 
       <div>
-        {/* 头部 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-100">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -170,7 +166,6 @@ const BookManagementPage = () => {
               <p className="text-gray-500 mt-1">共 {books.length} 本图书</p>
             </div>
             <div className="flex items-center gap-3">
-              {/* 搜索框 */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <input
@@ -181,7 +176,6 @@ const BookManagementPage = () => {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-64"
                 />
               </div>
-              {/* 添加按钮 */}
               <button
                 onClick={() => {
                   resetForm();
@@ -197,7 +191,6 @@ const BookManagementPage = () => {
           </div>
         </div>
 
-        {/* 统计卡片 */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="text-sm text-gray-500">图书总数</div>
@@ -205,19 +198,18 @@ const BookManagementPage = () => {
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="text-sm text-gray-500">可借阅</div>
-            <div className="text-2xl font-bold text-green-600">{books.filter(b => b.status === 'available').length}</div>
+            <div className="text-2xl font-bold text-green-600">{books.filter(b => b.stock > 0).length}</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="text-sm text-gray-500">已借出</div>
-            <div className="text-2xl font-bold text-yellow-600">{books.filter(b => b.status === 'borrowed').length}</div>
+            <div className="text-2xl font-bold text-yellow-600">{books.filter(b => b.stock === 0).length}</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="text-sm text-gray-500">总借阅次数</div>
-            <div className="text-2xl font-bold text-blue-600">{books.reduce((sum, b) => sum + b.borrowCount, 0)}</div>
+            <div className="text-2xl font-bold text-blue-600">{books.reduce((sum, b) => sum + (b.borrowCount || 0), 0)}</div>
           </div>
         </div>
 
-        {/* 图书列表 */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -228,13 +220,19 @@ const BookManagementPage = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">分类</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">库存</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">借阅次数</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {books.map((book) => {
-                const status = getStatusLabel(book.status);
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-500">加载中...</p>
+                  </td>
+                </tr>
+              ) : books.map((book) => {
+                const status = getStatusLabel(book.stock);
                 return (
                   <tr key={book.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -244,13 +242,12 @@ const BookManagementPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.author}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.isbn}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.category}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.stock} / {book.totalStock}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.stock}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${status.class}`}>
                         {status.text}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.borrowCount}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <button
@@ -269,7 +266,7 @@ const BookManagementPage = () => {
                           <Edit size={16} />
                         </button>
                         <button
-                          onClick={() => setShowDeleteConfirm(book.id)}
+                          onClick={() => setShowDeleteConfirm(String(book.id))}
                           className="text-red-600 hover:text-red-900"
                         >
                           <Trash2 size={16} />
@@ -282,7 +279,7 @@ const BookManagementPage = () => {
             </tbody>
           </table>
 
-          {books.length === 0 && (
+          {!isLoading && books.length === 0 && (
             <div className="text-center py-12">
               <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">暂无图书</h3>
@@ -292,7 +289,6 @@ const BookManagementPage = () => {
         </div>
       </div>
 
-      {/* 添加/编辑图书模态框 */}
       {(showAddModal || editingBook) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -385,7 +381,7 @@ const BookManagementPage = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">当前库存</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">库存</label>
                   <input
                     type="number"
                     name="stock"
@@ -396,38 +392,16 @@ const BookManagementPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">总库存</label>
-                  <input
-                    type="number"
-                    name="totalStock"
-                    min="0"
-                    value={formData.totalStock}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">是否公开</label>
+                  <select
+                    name="isPublic"
+                    value={formData.isPublic}
                     onChange={handleFormChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">位置</label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location || ''}
-                    onChange={handleFormChange}
-                    placeholder="例如：A栋1楼"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">价格</label>
-                  <input
-                    type="number"
-                    name="price"
-                    min="0"
-                    step="0.01"
-                    value={formData.price || 0}
-                    onChange={handleFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value={1}>是</option>
+                    <option value={0}>否</option>
+                  </select>
                 </div>
               </div>
               
@@ -455,9 +429,10 @@ const BookManagementPage = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {editingBook ? '保存修改' : '添加图书'}
+                  {isLoading ? '加载中...' : (editingBook ? '保存修改' : '添加图书')}
                 </button>
               </div>
             </form>
@@ -465,7 +440,6 @@ const BookManagementPage = () => {
         </div>
       )}
 
-      {/* 图书详情模态框 */}
       {showDetail && selectedBook && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
@@ -504,31 +478,19 @@ const BookManagementPage = () => {
                 <div>
                   <div className="text-sm text-gray-500">状态</div>
                   <div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusLabel(selectedBook.status).class}`}>
-                      {getStatusLabel(selectedBook.status).text}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusLabel(selectedBook.stock).class}`}>
+                      {getStatusLabel(selectedBook.stock).text}
                     </span>
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">库存</div>
-                  <div className="font-medium text-gray-900">{selectedBook.stock} / {selectedBook.totalStock}</div>
+                  <div className="font-medium text-gray-900">{selectedBook.stock}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500">借阅次数</div>
-                  <div className="font-medium text-gray-900">{selectedBook.borrowCount}</div>
+                  <div className="text-sm text-gray-500">评分</div>
+                  <div className="font-medium text-gray-900">{selectedBook.rating || 0}</div>
                 </div>
-                {selectedBook.location && (
-                  <div>
-                    <div className="text-sm text-gray-500">位置</div>
-                    <div className="font-medium text-gray-900">{selectedBook.location}</div>
-                  </div>
-                )}
-                {selectedBook.price && (
-                  <div>
-                    <div className="text-sm text-gray-500">价格</div>
-                    <div className="font-medium text-gray-900">¥{selectedBook.price}</div>
-                  </div>
-                )}
               </div>
               
               {selectedBook.description && (
@@ -551,7 +513,6 @@ const BookManagementPage = () => {
         </div>
       )}
 
-      {/* 删除确认模态框 */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
@@ -569,9 +530,10 @@ const BookManagementPage = () => {
                 </button>
                 <button
                   onClick={() => handleDeleteBook(showDeleteConfirm)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                 >
-                  确认删除
+                  {isLoading ? '删除中...' : '确认删除'}
                 </button>
               </div>
             </div>

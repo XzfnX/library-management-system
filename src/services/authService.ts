@@ -1,5 +1,6 @@
 import api from './api';
-import { User, LoginDTO, RegisterDTO } from './types';
+import { User } from '../types/user';
+import { LoginDTO, RegisterDTO } from './types';
 
 export const authService = {
   async login(data: LoginDTO): Promise<string> {
@@ -18,13 +19,24 @@ export const authService = {
   async getCurrentUser(): Promise<User> {
     const response = await api.get<any>('/auth/current');
     if (response.data) {
-      localStorage.setItem('user', JSON.stringify(response.data));
+      const user: User = {
+        ...response.data,
+        id: response.data.id,
+        role: response.data.role === 2 ? 'admin' : 'student',
+        status: response.data.status || 1
+      };
+      localStorage.setItem('user', JSON.stringify(user));
+      return user;
     }
-    return response.data;
+    throw new Error('获取用户信息失败');
   },
 
   async logout(): Promise<void> {
-    await api.post('/auth/logout');
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // 忽略登出失败
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
