@@ -1,28 +1,21 @@
 import api from './api';
-import { Category, User, Book, BorrowRecord, StatisticsVO, PageResult, UserVO, BookVO, BorrowRecordVO } from './types';
+import { StatisticsVO, BookVO } from './types';
+import { User } from '../types/user';
+import { Book } from '../types/book';
 
 export const adminService = {
-  async getUsers(): Promise<User[]> {
-    const response = await api.get<any>('/admin/users');
-    return response.data || [];
-  },
-
-  async updateUserStatus(id: number, status: number): Promise<void> {
-    await api.put(`/admin/users/${id}/status`, null, { params: { status } });
+  async getStatistics(): Promise<StatisticsVO> {
+    const response = await api.get<StatisticsVO>('/admin/statistics');
+    return response.data;
   },
 
   async getAllBooks(): Promise<Book[]> {
-    const response = await api.get<any>('/admin/books');
-    return response.data || [];
+    const response = await api.get<BookVO[]>('/admin/books');
+    return response.data as unknown as Book[];
   },
 
-  async getAllBorrows(): Promise<BorrowRecord[]> {
-    const response = await api.get<any>('/admin/borrows');
-    return response.data || [];
-  },
-
-  async getStatistics(): Promise<StatisticsVO> {
-    const response = await api.get<any>('/admin/statistics');
+  async getAllUsers(): Promise<User[]> {
+    const response = await api.get<User[]>('/admin/users');
     return response.data;
-  },
+  }
 };

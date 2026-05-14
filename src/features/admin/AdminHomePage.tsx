@@ -1,14 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Book, BookOpen, GraduationCap, Clock, BarChart3, Users, AlertCircle, ArrowRight } from 'lucide-react';
-import { BookStorage } from '../../utils/bookStorage';
-import { BorrowStorage } from '../../utils/borrowStorage';
-import { UserStorage } from '../../utils/userStorage';
+import { adminService } from '../../services/adminService';
+import { bookService } from '../../services/bookService';
 import AdminLayout from '../../layouts/AdminLayout';
+
+interface Stats {
+  totalBooks: number;
+  availableBooks: number;
+  totalStudents: number;
+  totalBorrows: number;
+  activeBorrows: number;
+  overdueBorrows: number;
+}
 
 const AdminHomePage: React.FC = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     totalBooks: 0,
     availableBooks: 0,
     totalStudents: 0,
@@ -16,30 +24,35 @@ const AdminHomePage: React.FC = () => {
     activeBorrows: 0,
     overdueBorrows: 0
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadStats();
   }, []);
 
-  const loadStats = () => {
-    const books = BookStorage.getAll();
-    const borrows = BorrowStorage.getAll();
-    const users = UserStorage.getAll();
+  const loadStats = async () => {
+    setLoading(true);
+    try {
+      const [statistics, books] = await Promise.all([
+        adminService.getStatistics(),
+        bookService.getBooks({ page: 1, size: 100 })
+      ]);
 
-    const now = new Date();
-    const overdueCount = borrows.filter(b => {
-      if (b.status === 'returned') return false;
-      return new Date(b.dueDate) < now;
-    }).length;
+      const availableCount = books.records.filter(b => b.stock > 0).length;
 
-    setStats({
-      totalBooks: books.length,
-      availableBooks: books.filter(b => b.stock > 0).length,
-      totalStudents: users.filter(u => u.role === 'student').length,
-      totalBorrows: borrows.length,
-      activeBorrows: borrows.filter(b => b.status !== 'returned').length,
-      overdueBorrows: overdueCount
-    });
+      setStats({
+        totalBooks: statistics.totalBooks,
+        availableBooks: availableCount,
+        totalStudents: statistics.totalUsers,
+        totalBorrows: statistics.totalBorrows,
+        activeBorrows: statistics.currentBorrows,
+        overdueBorrows: statistics.overdueBorrows
+      });
+    } catch (error) {
+      console.error('加载统计数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const menuCards = [
@@ -97,61 +110,70 @@ const AdminHomePage: React.FC = () => {
         <p className="text-gray-600">请选择您要管理的板块</p>
       </div>
 
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-        {statCards.map((card, index) => {
-          const Icon = card.icon;
-          const colorMap: Record<string, string> = {
-            blue: 'text-blue-600 bg-blue-100',
-            green: 'text-green-600 bg-green-100',
-            purple: 'text-purple-600 bg-purple-100',
-            orange: 'text-orange-600 bg-orange-100',
-            yellow: 'text-yellow-600 bg-yellow-100',
-            red: 'text-red-600 bg-red-100'
-          };
-          
-          return (
-            <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${colorMap[card.color]}`}>
-                  <Icon className="w-6 h-6" />
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600"></div>
+          <span className="ml-3 text-gray-500">加载中...</span>
+        </div>
+      ) : (
+        <>
+          {/* 统计卡片 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+            {statCards.map((card, index) => {
+              const Icon = card.icon;
+              const colorMap: Record<string, string> = {
+                blue: 'text-blue-600 bg-blue-100',
+                green: 'text-green-600 bg-green-100',
+                purple: 'text-purple-600 bg-purple-100',
+                orange: 'text-orange-600 bg-orange-100',
+                yellow: 'text-yellow-600 bg-yellow-100',
+                red: 'text-red-600 bg-red-100'
+              };
+              
+              return (
+                <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-lg ${colorMap[card.color]}`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">{card.label}</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">{card.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
 
-      {/* 功能卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {menuCards.map((item, index) => {
-          const colors = colorClasses[item.color as keyof typeof colorClasses];
-          const Icon = item.icon;
-          
-          return (
-            <button
-              key={index}
-              onClick={() => navigate(item.path)}
-              className={`bg-white rounded-xl shadow-sm p-8 border ${colors.border} hover:shadow-lg transition-all transform hover:-translate-y-1 text-left group`}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`p-4 ${colors.bg} rounded-xl group-hover:scale-110 transition-transform`}>
-                  <Icon className={`w-10 h-10 ${colors.text}`} />
-                </div>
-                <div className="flex-1">
-                  <h3 className={`text-xl font-semibold ${colors.text}`}>{item.title}</h3>
-                  <p className="text-gray-500 mt-2">{item.description}</p>
-                </div>
-                <ArrowRight className="w-6 h-6 text-gray-400 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </button>
-          );
-        })}
-      </div>
+          {/* 功能卡片 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {menuCards.map((item, index) => {
+              const colors = colorClasses[item.color as keyof typeof colorClasses];
+              const Icon = item.icon;
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => navigate(item.path)}
+                  className={`bg-white rounded-xl shadow-sm p-8 border ${colors.border} hover:shadow-lg transition-all transform hover:-translate-y-1 text-left group`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`p-4 ${colors.bg} rounded-xl group-hover:scale-110 transition-transform`}>
+                      <Icon className={`w-10 h-10 ${colors.text}`} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className={`text-xl font-semibold ${colors.text}`}>{item.title}</h3>
+                      <p className="text-gray-500 mt-2">{item.description}</p>
+                    </div>
+                    <ArrowRight className="w-6 h-6 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </AdminLayout>
   );
 };
