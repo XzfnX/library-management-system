@@ -176,7 +176,7 @@ export default function LoginPage() {
               </button>
 
               <div className="text-center text-sm text-gray-500 pt-4">
-                <p>演示账号：学号 2024001，姓名 张三</p>
+                <p>演示账号：学号 2024001，姓名 testuser</p>
               </div>
             </form>
           )}

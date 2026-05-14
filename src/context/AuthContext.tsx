@@ -62,7 +62,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       return { success: false, message: '学号或姓名错误' };
     } catch (error: any) {
-      return { success: false, message: error.message || '登录失败，请重试！' };
+      if (error.response?.data?.message) {
+        return { success: false, message: error.response.data.message };
+      }
+      if (error.message?.includes('Network') || !error.response) {
+        return { success: false, message: '登录错误' };
+      }
+      return { success: false, message: error.message || '登录错误' };
     }
   };
 
@@ -76,7 +82,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       return { success: false, message: '账号或密码错误' };
     } catch (error: any) {
-      return { success: false, message: error.message || '登录失败，请重试！' };
+      if (error.response?.data?.message) {
+        return { success: false, message: error.response.data.message };
+      }
+      if (error.message?.includes('Network') || !error.response) {
+        return { success: false, message: '登录错误' };
+      }
+      return { success: false, message: error.message || '登录错误' };
     }
   };
 

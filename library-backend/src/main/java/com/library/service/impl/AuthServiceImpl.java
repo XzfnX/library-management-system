@@ -43,6 +43,10 @@ public class AuthServiceImpl implements AuthService {
                     .eq(User::getRole, 1)
                     .eq(User::getStatus, 1)
             );
+            
+            if (user == null) {
+                throw new BusinessException("学号或姓名错误");
+            }
         } else if (StrUtil.isNotBlank(loginDTO.getUsername()) && StrUtil.isNotBlank(loginDTO.getPassword())) {
             user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>()
@@ -50,13 +54,15 @@ public class AuthServiceImpl implements AuthService {
                     .eq(User::getStatus, 1)
             );
 
-            if (user != null && !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
-                throw new BusinessException("密码错误");
+            if (user == null) {
+                throw new BusinessException("账号或密码错误");
             }
-        }
-
-        if (user == null) {
-            throw new BusinessException("用户不存在或已被禁用");
+            
+            if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+                throw new BusinessException("账号或密码错误");
+            }
+        } else {
+            throw new BusinessException("请提供完整的登录信息");
         }
 
         return jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());

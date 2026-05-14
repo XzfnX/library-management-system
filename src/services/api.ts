@@ -33,11 +33,16 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
-      return Promise.reject(new Error('登录已过期，请重新登录'));
+      return Promise.reject({ 
+        response: error.response, 
+        message: '登录已过期，请重新登录' 
+      });
     }
     
-    const message = error.response?.data?.message || error.message || '网络错误';
-    return Promise.reject(new Error(message));
+    return Promise.reject({ 
+      response: error.response, 
+      message: error.response?.data?.message || error.message || '网络错误' 
+    });
   }
 );
 
