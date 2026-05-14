@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Book, BookFormData } from '../types/book';
-import { BookStorage } from '../utils/bookStorage';
+import { BookService } from '../services/bookService';
 import { Search, Plus, Edit, Trash2, BookOpen, Info, CheckCircle, XCircle } from 'lucide-react';
+import AdminLayout from '../layouts/AdminLayout';
 
 const BookManagementPage = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -28,9 +29,9 @@ const BookManagementPage = () => {
 
   // 加载图书
   const loadBooks = () => {
-    let result = BookStorage.getAll();
+    let result = BookService.getAll();
     if (searchKeyword) {
-      result = BookStorage.search(searchKeyword);
+      result = BookService.search(searchKeyword);
     }
     setBooks(result);
   };
@@ -58,7 +59,7 @@ const BookManagementPage = () => {
   const handleAddBook = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      BookStorage.add(formData);
+      BookService.add(formData);
       showMessage('添加图书成功！', 'success');
       setShowAddModal(false);
       resetForm();
@@ -74,7 +75,7 @@ const BookManagementPage = () => {
     if (!editingBook) return;
     
     try {
-      BookStorage.update(editingBook.id, formData);
+      BookService.update(editingBook.id, formData);
       showMessage('更新图书成功！', 'success');
       setEditingBook(null);
       resetForm();
@@ -87,7 +88,7 @@ const BookManagementPage = () => {
   // 删除图书
   const handleDeleteBook = (id: string) => {
     try {
-      BookStorage.delete(id);
+      BookService.delete(id);
       showMessage('删除图书成功！', 'success');
       setShowDeleteConfirm(null);
       loadBooks();
@@ -146,7 +147,7 @@ const BookManagementPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <AdminLayout title="图书管理" showBack={true}>
       {/* 消息提示 */}
       {message && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${
@@ -157,13 +158,13 @@ const BookManagementPage = () => {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
+      <div>
         {/* 头部 */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-100">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <BookOpen className="text-blue-600" />
+                <BookOpen className="text-purple-600" />
                 图书管理
               </h1>
               <p className="text-gray-500 mt-1">共 {books.length} 本图书</p>
@@ -177,7 +178,7 @@ const BookManagementPage = () => {
                   placeholder="搜索书名、作者、ISBN..."
                   value={searchKeyword}
                   onChange={(e) => setSearchKeyword(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-64"
                 />
               </div>
               {/* 添加按钮 */}
@@ -187,7 +188,7 @@ const BookManagementPage = () => {
                   setEditingBook(null);
                   setShowAddModal(true);
                 }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
               >
                 <Plus size={20} />
                 添加图书
@@ -577,7 +578,7 @@ const BookManagementPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 };
 

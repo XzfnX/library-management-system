@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '../types/user';
-import { UserStorage } from '../utils/userStorage';
+import { UserService } from '../services/userService';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -30,20 +30,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const user = UserStorage.getCurrentUser();
+    const user = UserService.getCurrentUser();
     setCurrentUser(user);
     setIsLoading(false);
   }, []);
 
   const studentLogin = async (studentId: string, username: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const user = UserStorage.studentLogin(studentId, username);
-      if (user) {
-        UserStorage.setCurrentUser(user);
-        setCurrentUser(user);
-        return { success: true, message: '登录成功！' };
+      const result = UserService.studentLogin(studentId, username);
+      if (result.success && result.user) {
+        setCurrentUser(result.user);
       }
-      return { success: false, message: '学号或姓名不正确！' };
+      return result;
     } catch (error) {
       return { success: false, message: '登录失败，请重试！' };
     }
@@ -51,20 +49,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const adminLogin = async (account: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const user = UserStorage.adminLogin(account, password);
-      if (user) {
-        UserStorage.setCurrentUser(user);
-        setCurrentUser(user);
-        return { success: true, message: '登录成功！' };
+      const result = UserService.adminLogin(account, password);
+      if (result.success && result.user) {
+        setCurrentUser(result.user);
       }
-      return { success: false, message: '账号或密码不正确！' };
+      return result;
     } catch (error) {
       return { success: false, message: '登录失败，请重试！' };
     }
   };
 
   const logout = () => {
-    UserStorage.logout();
+    UserService.logout();
     setCurrentUser(null);
   };
 

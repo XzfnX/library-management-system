@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Book } from '../types/book';
 import { BorrowRecord } from '../types/borrow';
-import { BookStorage } from '../utils/bookStorage';
-import { BorrowStorage } from '../utils/borrowStorage';
+import { BookService } from '../services/bookService';
+import { BorrowService } from '../services/borrowService';
 import { Search, Plus, RefreshCw, BookOpen, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import AdminLayout from '../layouts/AdminLayout';
 
 const BorrowManagementPage = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -24,8 +25,8 @@ const BorrowManagementPage = () => {
 
   // 加载数据
   const loadData = () => {
-    const booksData = BookStorage.getAll();
-    const recordsData = BorrowStorage.getAll();
+    const booksData = BookService.getAll();
+    const recordsData = BorrowService.getAll();
     setBooks(booksData);
     setBorrowRecords(recordsData);
   };
@@ -64,7 +65,7 @@ const BorrowManagementPage = () => {
     if (!selectedBook) return;
     
     try {
-      const result = BorrowStorage.add({
+      const result = BorrowService.add({
         bookId: selectedBook.id,
         userId: borrowForm.userId || 'user_' + Date.now(),
         username: borrowForm.username,
@@ -91,7 +92,7 @@ const BorrowManagementPage = () => {
     if (!showReturnConfirm) return;
     
     try {
-      const success = BorrowStorage.return(showReturnConfirm.id, 'admin', '管理员');
+      const success = BorrowService.return(showReturnConfirm.id, 'admin', '管理员');
       if (success) {
         showMessage('归还成功！', 'success');
         setShowReturnConfirm(null);
@@ -109,7 +110,7 @@ const BorrowManagementPage = () => {
     if (!showRenewConfirm) return;
     
     try {
-      const result = BorrowStorage.renew(showRenewConfirm.id, 30);
+      const result = BorrowService.renew(showRenewConfirm.id, 30);
       if (result) {
         showMessage('续借成功！', 'success');
         setShowRenewConfirm(null);
@@ -125,7 +126,7 @@ const BorrowManagementPage = () => {
   // 删除记录
   const handleDelete = (id: string) => {
     try {
-      BorrowStorage.delete(id);
+      BorrowService.delete(id);
       showMessage('删除成功！', 'success');
       loadData();
     } catch (error) {
@@ -159,7 +160,7 @@ const BorrowManagementPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <AdminLayout title="借阅管理" showBack={true}>
       {/* 消息提示 */}
       {message && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${
@@ -170,9 +171,9 @@ const BorrowManagementPage = () => {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
+      <div>
         {/* 头部 */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-100">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -547,7 +548,7 @@ const BorrowManagementPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 };
 
